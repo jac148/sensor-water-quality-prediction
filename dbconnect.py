@@ -1,13 +1,13 @@
 import psycopg2
 from datetime import datetime
 
-# db = psycopg2.connect(host='103.252.1.150', dbname='postgres',user='postgres',password='postgres',port=5005)
-db = psycopg2.connect(host='localhost', dbname='postgres',user='postgres',password='postgres',port=5432)
+db = psycopg2.connect(host='103.252.1.150', dbname='postgres',user='postgres',password='postgres',port=5324)
+# db = psycopg2.connect(host='localhost', dbname='postgres',user='postgres',password='postgres',port=5432)
 cursor=db.cursor()
 
 class Databases():
     def __init__(self):
-        self.db = psycopg2.connect(host='103.252.1.150', dbname='postgres',user='postgres',password='postgres',port=5005)
+        self.db = psycopg2.connect(host='103.252.1.150', dbname='postgres',user='postgres',password='postgres',port=5324)
 
         self.cursor = self.db.cursor()
 

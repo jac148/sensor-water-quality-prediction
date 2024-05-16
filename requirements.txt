@@ -1,0 +1,2 @@
+minimalmodbus
+psycopg2-binary
