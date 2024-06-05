@@ -4,6 +4,8 @@ import dbconnect
 import psycopg2
 import sys
 from datetime import datetime
+import pymysql
+import requests
 
 def convert_register_value(value1, value2):
     value2 = int(value2, 16)
@@ -27,7 +29,8 @@ sensor_address_con = 0x04
 
 now = time
 
-try:
+if __name__ == '__main__':
+    print(1)
     # ph sensor connect
     instrument_ph = minimalmodbus.Instrument(port=sensor_port, slaveaddress=sensor_address_ph)
     instrument_ph.serial.baudrate = 9600
@@ -50,18 +53,15 @@ try:
     instrument_con.serial.bytesize = 8
     instrument_con.serial.stopbits = 1
     instrument_con.serial.timeout = 1
-
-
-
-except Exception as e:
-    print("Could not connect : ", e)
-
-if __name__ == '__main__':
+    conn = pymysql.connect(host='103.252.1.144', user ='sensor', password ='sensor', db ='sensor')
+    # conn = pymysql.connect(host='localhost', user ='root', password ='0000', db ='water_sensor')
+    print("connect")
     try:
         flag = 0
 
         while True:
             try :
+                print(1)
                 # ----------------------------------------------------------------------------------------------------------------
                 # read ph sensor
                 address_value_ph = []
@@ -87,17 +87,71 @@ if __name__ == '__main__':
                 read_register1(instrument_con, address_value_con)
 
                 con = convert_register_value(address_value_con[0], address_value_con[1])
+                con *= 100
                 time.sleep(2)
                 # ----------------------------------------------------------------------------------------------------------------
 
-                current_time = datetime.now()
+                now_time = datetime.now()
+                current_time = now_time.strftime('%Y-%m-%d %H:%M:%S')
+                
                 print(current_time)
                 print("ph : ", ph, "temp : ", temp)
                 print("DO : ", do_value)
                 print("con : ", con)
 
-                db = dbconnect.CRUD()
-                db.save_sensor_data(current_time,temp, ph, do_value,con)
+                
+                cur = conn.cursor()
+                cur.execute("INSERT INTO sensor VALUES (%s, %s, %s, %s, %s)",(current_time, ph, temp, do_value, con))
+
+                conn.commit()
+
+                # ----------------------------------------------------------------------------------------------------------------
+                # send data to server
+                #
+                fishfarm_id = 3
+                
+                url_temp = "http://223.130.133.182/api/v1/temperature"
+                
+                json_temp = {
+                    "timestamp": current_time,
+                    "id" : fishfarm_id,
+                    "temperature" : temp
+                }
+                
+                url_ph = "http://223.130.133.182/api/v1/ph"
+                
+                json_ph = {
+                    "timestamp": current_time,
+                    "id": 2,
+                    "pH": ph
+                }
+                
+                url_do = "http://223.130.133.182/api/v1/do"
+                
+                json_do = {
+                    "timestamp": current_time,
+                    "id": 2,
+                    "DO": do_value
+                }
+                
+                url_con = "http://223.130.133.182/api/v1/conductivity"
+                
+                json_con = {
+                    "timestamp": current_time,
+                    "id": fishfarm_id,
+                    "conductivity": con
+                }
+                
+                response_temp = requests.post(url_temp, json=json_temp)
+                response_ph = requests.post(url_ph, json=json_ph)
+                response_do = requests.post(url_do, json=json_do)
+                response_con = requests.post(url_con, json=json_con)
+                # ----------------------------------------------------------------------------------------------------------------
+
+
+
+                # db = dbconnect.CRUD()
+                # db.save_sensor_data(current_time,temp, ph, do_value,con)
 
             except Exception as e:
                 print("ERROR : ", e)
@@ -112,4 +166,5 @@ if __name__ == '__main__':
         instrument_con.serial.close()
 
     time.sleep(1)
+
 
