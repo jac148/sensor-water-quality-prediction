@@ -1,7 +1,5 @@
 import minimalmodbus
 import time
-import dbconnect
-import psycopg2
 import sys
 from datetime import datetime
 import pymysql
@@ -19,10 +17,10 @@ def read_register1(instrument, arr) :
     for register_address in range(16):
         response = instrument.read_register(register_address, functioncode=int('0x04', 16))
         arr.append(hex(response))
-        time.sleep(0.5)
+        time.sleep(0.3)
 
 
-sensor_port = "/dev/tty.usbserial-10"
+sensor_port = "/dev/ttyUSB0"
 sensor_address_ph = 0x01
 sensor_address_DO = 0x03
 sensor_address_con = 0x04
@@ -30,7 +28,6 @@ sensor_address_con = 0x04
 now = time
 
 if __name__ == '__main__':
-    print(1)
     # ph sensor connect
     instrument_ph = minimalmodbus.Instrument(port=sensor_port, slaveaddress=sensor_address_ph)
     instrument_ph.serial.baudrate = 9600
@@ -54,7 +51,7 @@ if __name__ == '__main__':
     instrument_con.serial.stopbits = 1
     instrument_con.serial.timeout = 1
     conn = pymysql.connect(host='103.252.1.144', user ='sensor', password ='sensor', db ='sensor')
-    # conn = pymysql.connect(host='localhost', user ='root', password ='0000', db ='water_sensor')
+    conn_local = pymysql.connect(host='localhost', user ='root', password ='0000', db ='sensor')
     print("connect")
     try:
         flag = 0
@@ -69,7 +66,7 @@ if __name__ == '__main__':
 
                 ph = convert_register_value(address_value_ph[0], address_value_ph[1])
                 temp = convert_register_value(address_value_ph[8], address_value_ph[9])
-                time.sleep(2)
+                time.sleep(1)
                 #-----------------------------------------------------------------------------------------------------------------
 
                 # ----------------------------------------------------------------------------------------------------------------
@@ -78,7 +75,7 @@ if __name__ == '__main__':
                 read_register1(instrument_DO, address_value_DO)
 
                 do_value = convert_register_value(address_value_DO[0], address_value_DO[1])
-                time.sleep(2)
+                time.sleep(1)
                 # ----------------------------------------------------------------------------------------------------------------
 
                 # ----------------------------------------------------------------------------------------------------------------
@@ -88,7 +85,7 @@ if __name__ == '__main__':
 
                 con = convert_register_value(address_value_con[0], address_value_con[1])
                 con *= 100
-                time.sleep(2)
+                time.sleep(1)
                 # ----------------------------------------------------------------------------------------------------------------
 
                 now_time = datetime.now()
@@ -101,9 +98,13 @@ if __name__ == '__main__':
 
                 
                 cur = conn.cursor()
-                cur.execute("INSERT INTO sensor VALUES (%s, %s, %s, %s, %s)",(current_time, ph, temp, do_value, con))
+                cur.execute("INSERT INTO sensor_data VALUES (%s, %s, %s, %s, %s)",(current_time, ph, temp, do_value, con))
+
+                cur_local = conn_local.cursor()
+                cur_local.execute("INSERT INTO sensor_data VALUES (%s, %s, %s, %s, %s)",(current_time, ph, temp, do_value, con))
 
                 conn.commit()
+                conn_local.commit()
 
                 # ----------------------------------------------------------------------------------------------------------------
                 # send data to server
