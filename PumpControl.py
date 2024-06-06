@@ -1,9 +1,7 @@
 import numpy as np  
 from scipy.integrate import odeint  
 import matplotlib.pyplot as plt
-import cvxpy as cp
 import math
-import time
 import random
 
 class FishTank:
