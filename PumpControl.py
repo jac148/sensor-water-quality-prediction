@@ -85,7 +85,7 @@ pump_rate = 15
 
 tank = FishTank(initial_DO, temperature, fish_count, plant_count, organic_matter, pump_rate)
 
-pid = PIDController(Kp=0.3, Ki=0.05, Kd=0.1, setpoint=4.5)
+pid = PIDController(Kp=0.3, Ki=0.05, Kd=0.1, setpoint=6.0)
 
 # 시뮬레이션 15분
 current_time = 0
